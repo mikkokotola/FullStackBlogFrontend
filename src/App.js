@@ -237,13 +237,9 @@ class App extends React.Component {
 
             <div>
               <h2>Blogs</h2>
-              {console.log("Rendering bloglist")}
               {this.state.blogs.map(blog => {
-                console.log(this.state.user.username)
-                console.log(blog.user.username)
                 const removeFunction = this.state.user.username === blog.user.username ? this.removeBlog(blog.id) : null
                 const showDeleteButton = this.state.user.username === blog.user.username ? true : false
-                console.log(removeFunction)
                 return (
                   <Blog
                     key={blog.id}
