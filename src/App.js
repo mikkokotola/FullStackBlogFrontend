@@ -1,13 +1,18 @@
 import React from 'react'
 import Blog from './components/Blog'
 import blogService from './services/blogs'
+import userService from './services/users'
 import loginService from './services/login'
+import { BrowserRouter as Router, Route, Link } from 'react-router-dom'
+import { Navbar, Nav, NavItem, ListGroup, ListGroupItem } from 'react-bootstrap'
+import PropTypes from 'prop-types'
 
 class App extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
       blogs: [],
+      users: [],
       new_blog_title: '',
       new_blog_url: '',
       new_blog_author: '',
@@ -27,6 +32,13 @@ class App extends React.Component {
         //const blogs = blgs.map(blg => { blg, detailsVisible: true })
         const blogs = blgs.map(blg => Object.assign({}, blg, { detailsVisible: this.state.blogs.find(n => n.id === blg.id) === undefined ? false : this.state.blogs.find(n => n.id === blg.id).detailsVisible }))
         this.setState({ blogs })
+      }
+    )
+
+    userService.getAll().then(
+      users => {
+        //const blogs = users.map(blg => Object.assign({}, blg, { detailsVisible: this.state.blogs.find(n => n.id === blg.id) === undefined ? false : this.state.blogs.find(n => n.id === blg.id).detailsVisible }))
+        this.setState({ users })
       }
     )
 
@@ -93,7 +105,7 @@ class App extends React.Component {
   removeBlog = (id) => {
     return () => {
       const blogToDelete = this.state.blogs.find(blog => blog.id === id)
-      console.log("Deleting:")
+      console.log('Deleting:')
       console.log(blogToDelete)
 
       if (window.confirm(`Are you sure you want to remove blog "${blogToDelete.title}?"`)) {
@@ -215,50 +227,102 @@ class App extends React.Component {
     }
   }
 
-
   render() {
     return (
-      <div>
-        <h1>Bloglist</h1>
-        <ErrorNotification message={this.state.error} />
-        <SuccessNotification message={this.state.message} />
-        {this.state.user === null ?
-          this.loginForm()
-          :
-
+      <div className='container'>
+        <Router>
           <div>
-            <p>{this.state.user.name} logged in</p>
+            <Navbar inverse collapseOnSelect>
+              <Navbar.Header>
+                <Navbar.Brand>
+                  Bloglist
+                </Navbar.Brand>
+                <Navbar.Toggle />
+              </Navbar.Header>
+              <Navbar.Collapse>
+                <Nav>
+                  <NavItem href='#'>
+                    <Link to="/">Blogs</Link>
+                  </NavItem>
+                  <NavItem href='#'>
+                    <Link to="/users">Users</Link>
+                  </NavItem>
+                </Nav>
+              </Navbar.Collapse>
+            </Navbar>
+            <ErrorNotification message={this.state.error} />
+            <SuccessNotification message={this.state.message} />
+            <Route exact path="/" render={() => {
+              return (
+                this.state.user === null ?
+                  this.loginForm()
+                  :
 
-            <form onSubmit={this.logout}>
-              <button>Log out</button>
-            </form>
+                  <div>
+                    <p>{this.state.user.name} logged in</p>
 
-            {this.addBlogForm()}
+                    <form onSubmit={this.logout}>
+                      <button>Log out</button>
+                    </form>
 
-            <div>
-              <h2>Blogs</h2>
-              {this.state.blogs.map(blog => {
-                const removeFunction = this.state.user.username === blog.user.username ? this.removeBlog(blog.id) : null
-                const showDeleteButton = this.state.user.username === blog.user.username ? true : false
-                return (
-                  <Blog
-                    key={blog.id}
-                    blog={blog}
-                    detailsVisible={blog.detailsVisible ? blog.detailsVisible : false}
-                    toggleDetailVisibility={this.toggleDetailVisibility(blog.id)}
-                    addLike={this.addLike(blog.id)}
-                    showDeleteButton={showDeleteButton}
-                    removeBlog={removeFunction} />)
-              })
-              }
+                    {this.addBlogForm()}
 
-            </div>
+                    <div>
+                      <h2>Blogs</h2>
+                      {this.state.blogs.map(blog => {
+                        const removeFunction = this.state.user.username === blog.user.username ? this.removeBlog(blog.id) : null
+                        const showDeleteButton = this.state.user.username === blog.user.username ? true : false
+                        return (
+                          <Blog
+                            key={blog.id}
+                            blog={blog}
+                            detailsVisible={blog.detailsVisible ? blog.detailsVisible : false}
+                            toggleDetailVisibility={this.toggleDetailVisibility(blog.id)}
+                            addLike={this.addLike(blog.id)}
+                            showDeleteButton={showDeleteButton}
+                            removeBlog={removeFunction} />)
+                      })
+                      }
+
+                    </div>
+                  </div>
+              )
+            }} />
+            <Route path="/users" render={() => {
+              //let users = this.getUsers()
+              console.log('In route users.')
+              console.log(this.state.users)
+              return (
+                this.state.user === null ?
+                  this.loginForm()
+                  :
+
+                  <div>
+                    <p>{this.state.user.name} logged in</p>
+
+                    <form onSubmit={this.logout}>
+                      <button>Log out</button>
+                    </form>
+                    <h2>Userlist</h2>
+                    <ListGroup>
+                      {this.state.users.map(user => {
+                        return (
+                          <ListGroupItem> {user.name}, number of blogs {user.blogs.length} </ListGroupItem>
+                        )
+                      })}
+                    </ListGroup>
+
+                  </div>
+              )
+            }} />
+
           </div>
-        }
+        </Router>
       </div>
     )
   }
 }
+
 
 const LoginForm = ({ handleLoginFieldChange, login, username, password }) => {
   return (
@@ -267,7 +331,7 @@ const LoginForm = ({ handleLoginFieldChange, login, username, password }) => {
       <form onSubmit={login}>
         <div>
           Username
-        <input
+          <input
             type="text"
             name="username"
             value={username}
@@ -276,7 +340,7 @@ const LoginForm = ({ handleLoginFieldChange, login, username, password }) => {
         </div>
         <div>
           Password
-        <input
+          <input
             type="password"
             name="password"
             value={password}
@@ -288,17 +352,13 @@ const LoginForm = ({ handleLoginFieldChange, login, username, password }) => {
     </div>
   )
 }
-/*
-const blogListView = () => (
-  <div>
-    <h2>Blogs</h2>
-    {this.state.blogs.map(blog =>
-      <Blog key={blog._id} blog={blog} />
-    )}
 
-  </div>
-)
-*/
+LoginForm.propTypes = {
+  handleLoginFieldChange: PropTypes.func.isRequired,
+  login: PropTypes.func.isRequired,
+  username: PropTypes.string,
+  password: PropTypes.string
+}
 
 const AddBlogForm = ({ addBlog, new_blog_title, new_blog_author, new_blog_url, handleBlogFieldChange }) => {
   return (
@@ -308,7 +368,7 @@ const AddBlogForm = ({ addBlog, new_blog_title, new_blog_author, new_blog_url, h
       <form onSubmit={addBlog}>
         <div>
           TItle
-                  <input
+          <input
             type="text"
             name="new_blog_title"
             value={new_blog_title}
@@ -317,7 +377,7 @@ const AddBlogForm = ({ addBlog, new_blog_title, new_blog_author, new_blog_url, h
         </div>
         <div>
           Author
-                  <input
+          <input
             type="text"
             name="new_blog_author"
             value={new_blog_author}
@@ -326,7 +386,7 @@ const AddBlogForm = ({ addBlog, new_blog_title, new_blog_author, new_blog_url, h
         </div>
         <div>
           URL
-                  <input
+          <input
             type="text"
             name="new_blog_url"
             value={new_blog_url}
@@ -341,6 +401,12 @@ const AddBlogForm = ({ addBlog, new_blog_title, new_blog_author, new_blog_url, h
   )
 }
 
+AddBlogForm.propTypes = {
+  addBlog: PropTypes.func.isRequired,
+  new_blog_author: PropTypes.string,
+  new_blog_url: PropTypes.string,
+  handleBlogFieldChange: PropTypes.func.isRequired
+}
 
 const ErrorNotification = ({ message }) => {
   if (message === null) {
@@ -364,4 +430,4 @@ const SuccessNotification = ({ message }) => {
   )
 }
 
-export default App;
+export default App
